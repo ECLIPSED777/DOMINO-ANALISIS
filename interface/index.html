@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente de Dominó Profesional — Domino Vamos AI</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Barra Superior / Header -->
+    <header class="app-header">
+      <div class="logo-group">
+        <div class="logo-icon">🀄</div>
+        <div>
+          <h1 class="logo-title">DOMINÓ VAMOS <span class="badge-ai">AI PRO</span></h1>
+          <p class="logo-subtitle">Analista Táctico en Tiempo Real • 2 vs 2</p>
+        </div>
+      </div>
+
+      <div class="header-status">
+        <div id="turnBadge" class="status-pill turn-waiting">
+          <span class="pulse-dot"></span>
+          <span id="turnText">ESPERANDO TURNO</span>
+        </div>
+        <div class="status-pill latency-pill">
+          ⚡ <span id="latencyText">-- ms</span>
+        </div>
+        <button id="btnResetRound" class="btn-secondary" title="Reiniciar mano">
+          🔄 Nueva Mano
+        </button>
+      </div>
+    </header>
+
+    <!-- Área Principal de Trabajo -->
+    <main class="main-layout">
+      
+      <!-- Columna Izquierda: Video / Captura / Overlay -->
+      <section class="viewport-section">
+        <div class="viewport-card">
+          <div class="viewport-header">
+            <span class="panel-label">VISIÓN EN VIVO & OVERLAY TÁCTICO</span>
+            <div class="stream-controls">
+              <button id="btnDemoMatch" class="btn-action" style="background: rgba(245, 158, 11, 0.2); border-color: var(--accent-gold); color: var(--accent-gold);">
+                ✨ Simular Mano
+              </button>
+              <button id="btnScreenShare" class="btn-action">
+                🖥️ Compartir Pantalla
+              </button>
+              <button id="btnWebcam" class="btn-action">
+                📷 Cámara
+              </button>
+              <label class="btn-action file-label">
+                📁 Subir Captura
+                <input type="file" id="fileInput" accept="image/*" style="display:none">
+              </label>
+            </div>
+          </div>
+
+          <!-- Contenedor Visual con Canvas Overlay -->
+          <div class="video-canvas-wrapper" id="canvasWrapper">
+            <video id="videoElement" autoplay playsinline muted style="display:none;"></video>
+            <canvas id="displayCanvas"></canvas>
+
+            <!-- LA NUBECITA FLOTANTE DE RECOMENDACIÓN (Solicitada en el audio) -->
+            <div id="floatingSpeechBubble" class="speech-bubble hidden">
+              <div class="bubble-header">
+                <span class="bubble-avatar">🤖</span>
+                <span class="bubble-title">¡MIRA, JUEGA ESTA!</span>
+              </div>
+              <div class="bubble-content" id="bubbleText">
+                Cargando recomendación táctica...
+              </div>
+            </div>
+
+            <!-- Flecha animada que apunta a la ficha en atril -->
+            <div id="targetArrow" class="target-arrow hidden">
+              <div class="arrow-body">⬇️</div>
+            </div>
+          </div>
+
+          <!-- Selector de Extremos Rápidos -->
+          <div class="ends-bar">
+            <span class="ends-title">EXTREMOS EN MESA:</span>
+            <div class="ends-selector">
+              <div class="end-badge">
+                <label>Izquierda:</label>
+                <input type="number" id="inputLeftEnd" min="0" max="6" placeholder="?">
+              </div>
+              <div class="chain-icon">⇄</div>
+              <div class="end-badge">
+                <label>Derecha:</label>
+                <input type="number" id="inputRightEnd" min="0" max="6" placeholder="?">
+              </div>
+              <button id="btnSetEnds" class="btn-small">Fijar Extremos</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Columna Derecha: Recomendación & Analítica Matemática -->
+      <aside class="analysis-section">
+        
+        <!-- Tarjeta Principal de Recomendación -->
+        <div class="card recommendation-card">
+          <div class="card-header">
+            <span class="card-badge" id="actionTypeBadge">ANÁLISIS ACTIVO</span>
+            <span class="confidence-badge" id="confidenceBadge">100% ÓPTIMO</span>
+          </div>
+
+          <div class="rec-hero-display">
+            <!-- Representación Gráfica de la Ficha Recomendada -->
+            <div class="domino-tile-large" id="largeTile">
+              <div class="tile-half tile-top" id="tileTopHalf">
+                <!-- Puntos SVG inyectados dinámicamente -->
+              </div>
+              <div class="tile-divider"></div>
+              <div class="tile-half tile-bottom" id="tileBottomHalf">
+                <!-- Puntos SVG inyectados dinámicamente -->
+              </div>
+            </div>
+
+            <div class="rec-instruction">
+              <span class="instruction-lead">JUGAR HACIA LA:</span>
+              <h2 class="target-end-display" id="targetEndText">ESPERANDO ANÁLISIS</h2>
+              <p class="rec-reasoning" id="reasoningText">
+                Apunta la cámara o comparte la pantalla de Domino Vamos para recibir asistencia matemática instantánea.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetría de Jugadores (Norte, Sur, Este, Oeste) -->
+        <div class="card telemetry-card">
+          <div class="card-title">ESTADO DE LA MESA (2 VS 2)</div>
+          <div class="table-map">
+            <!-- Compañero (Norte / lucho) -->
+            <div class="player-slot slot-north">
+              <span class="player-role">COMPAÑERO</span>
+              <span class="player-name">lucho (Norte)</span>
+              <div class="player-pills">
+                <span class="badge-tiles" id="countPartner">7 fichas</span>
+                <span class="badge-void" id="voidsPartner">Sin pases</span>
+              </div>
+            </div>
+
+            <!-- Rivales (Oeste / Jesus y Este / luifermen) -->
+            <div class="middle-players">
+              <div class="player-slot slot-west">
+                <span class="player-role">RIVAL IZQ</span>
+                <span class="player-name">Jesus (Oeste)</span>
+                <div class="player-pills">
+                  <span class="badge-tiles" id="countWest">7 fichas</span>
+                  <span class="badge-void" id="voidsWest">Sin pases</span>
+                </div>
+              </div>
+
+              <div class="center-table-stat">
+                <span class="table-stat-label">FICHAS NO VISTAS</span>
+                <span class="table-stat-value" id="unseenCount">21</span>
+              </div>
+
+              <div class="player-slot slot-east">
+                <span class="player-role">RIVAL DER</span>
+                <span class="player-name">luifermen (Este)</span>
+                <div class="player-pills">
+                  <span class="badge-tiles" id="countEast">7 fichas</span>
+                  <span class="badge-void" id="voidsEast">Sin pases</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hero (Sur / ECLIPSE RAM) -->
+            <div class="player-slot slot-south hero-slot">
+              <span class="player-role">TÚ (HERO)</span>
+              <span class="player-name">ECLIPSE RAM (Sur)</span>
+              <div class="player-pills">
+                <span class="badge-tiles badge-hero" id="countHero">7 fichas</span>
+                <span class="badge-team">Equipo Azul</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fichas Detectadas en mi Atril -->
+        <div class="card hand-card">
+          <div class="card-title">FICHAS DETECTADAS EN TU ATRIL</div>
+          <div class="hand-tiles-container" id="handContainer">
+            <span class="empty-hint">No se han detectado fichas aún</span>
+          </div>
+        </div>
+
+      </aside>
+    </main>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
